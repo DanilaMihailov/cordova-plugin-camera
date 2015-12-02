@@ -56,6 +56,13 @@ function capture(success, errorCallback) {
     video.height = 240;
     button.innerHTML = 'Capture!';
 
+    video.style.position = "absolute";
+    video.style.zIndex = 100;
+
+    button.style.position = "absolute";
+    button.style.zIndex = 100;
+    button.style.top = "250px";
+
     button.onclick = function() {
         // create a canvas and capture a frame from video stream
         var canvas = document.createElement('canvas');
