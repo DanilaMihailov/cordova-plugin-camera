@@ -44,6 +44,63 @@ function takePicture(success, error, opts) {
 
         document.body.appendChild(input);
     }
+};
+
+var randomString = function(length) {
+    var text = "";
+    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    for(var i = 0; i < length; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
+}
+
+function b64toBlob(b64Data, contentType, sliceSize) {
+    contentType = contentType || '';
+    sliceSize = sliceSize || 512;
+
+    var byteCharacters = atob(b64Data);
+    var byteArrays = [];
+
+    for (var offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+        var slice = byteCharacters.slice(offset, offset + sliceSize);
+
+        var byteNumbers = new Array(slice.length);
+        for (var i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+        }
+
+        var byteArray = new Uint8Array(byteNumbers);
+
+        byteArrays.push(byteArray);
+    }
+
+    var blob = new Blob(byteArrays, {type: contentType});
+    return blob;
+}
+
+
+function saveImg(imgB64, callback){
+    window.requestFileSystem(LocalFileSystem.TEMPORARY, imgB64.length, function (fs) {
+
+        fs.root.getFile(randomString(16) +".jpg", {create: true, exclusive: false}, function (entry) {
+
+            entry.createWriter(function (writer) {
+                writer.onwrite = function (e) {
+                    callback(entry.toURL());
+                };
+
+                writer.write(b64toBlob(imgB64));
+            }, function (err) {
+                console.log(err);
+            })
+
+        }, function (err) {
+            console.log(err);
+        })
+    }, function (err) {
+        console.log(err);
+    })
 }
 
 function capture(success, errorCallback) {
@@ -67,7 +124,7 @@ function capture(success, errorCallback) {
         // create a canvas and capture a frame from video stream
         var canvas = document.createElement('canvas');
         canvas.getContext('2d').drawImage(video, 0, 0, 320, 240);
-        
+
         // convert image stored in canvas to base64 encoded image
         var imageData = canvas.toDataURL('img/png');
         imageData = imageData.replace('data:image/png;base64,', '');
@@ -77,13 +134,14 @@ function capture(success, errorCallback) {
         video.parentNode.removeChild(video);
         button.parentNode.removeChild(button);
 
-        return success(imageData);
-    }
+        return saveImg(imageData, success);
+
+    };
 
     navigator.getUserMedia = navigator.getUserMedia ||
-                             navigator.webkitGetUserMedia ||
-                             navigator.mozGetUserMedia ||
-                             navigator.msGetUserMedia;
+        navigator.webkitGetUserMedia ||
+        navigator.mozGetUserMedia ||
+        navigator.msGetUserMedia;
 
     var successCallback = function(stream) {
         localMediaStream = stream;
